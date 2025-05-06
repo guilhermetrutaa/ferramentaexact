@@ -454,31 +454,31 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <h4 className="font-semibold text-lg">Preço de Venda</h4>
-                <div className="text-sm whitespace-pre-line">{tips.precoVenda}</div>
+                <div className="text-sm whitespace-pre-line">{selectedFinancialTips.precoVenda}</div>
               </div>
               <div className="space-y-3">
                 <h4 className="font-semibold text-lg">Volume de Vendas</h4>
-                <div className="text-sm whitespace-pre-line">{tips.volumeVendas}</div>
+                <div className="text-sm whitespace-pre-line">{selectedFinancialTips.volumeVendas}</div>
               </div>
               <div className="space-y-3">
                 <h4 className="font-semibold text-lg">Custo Variável</h4>
-                <div className="text-sm whitespace-pre-line">{tips.custoVariavel}</div>
+                <div className="text-sm whitespace-pre-line">{selectedFinancialTips.custoVariavel}</div>
               </div>
               <div className="space-y-3">
                 <h4 className="font-semibold text-lg">Custo Fixo</h4>
-                <div className="text-sm whitespace-pre-line">{tips.custoFixo}</div>
+                <div className="text-sm whitespace-pre-line">{selectedFinancialTips.custoFixo}</div>
               </div>
               <div className="space-y-3">
                 <h4 className="font-semibold text-lg">Giro de Estoque</h4>
-                <div className="text-sm whitespace-pre-line">{tips.giroEstoque}</div>
+                <div className="text-sm whitespace-pre-line">{selectedFinancialTips.giroEstoque}</div>
               </div>
               <div className="space-y-3">
                 <h4 className="font-semibold text-lg">Prazo de Recebimento</h4>
-                <div className="text-sm whitespace-pre-line">{tips.prazoRecebimento}</div>
+                <div className="text-sm whitespace-pre-line">{selectedFinancialTips.prazoRecebimento}</div>
               </div>
               <div className="space-y-3 md:col-span-2">
                 <h4 className="font-semibold text-lg">Prazo de Pagamento</h4>
-                <div className="text-sm whitespace-pre-line">{tips.prazoPagamento}</div>
+                <div className="text-sm whitespace-pre-line">{selectedFinancialTips.prazoPagamento}</div>
               </div>
             </div>
           </CardContent>
