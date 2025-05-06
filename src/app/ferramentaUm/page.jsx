@@ -18,27 +18,27 @@ import Image from 'next/image'
 function App() {
   const [fixedCosts, setFixedCosts] = useState(() => {
     const saved = localStorage.getItem('fixedCosts')
-    return saved ? JSON.parse(saved) : []
+    return saved ? JSON.parse(saved) : [] // Garantir que seja um array vazio se não existir no localStorage
   })
   
   const [variableCosts, setVariableCosts] = useState(() => {
     const saved = localStorage.getItem('variableCosts')
-    return saved ? JSON.parse(saved) : []
+    return saved ? JSON.parse(saved) : [] // Garantir que seja um array vazio se não existir no localStorage
   })
   
   const [currentSales, setCurrentSales] = useState(() => {
     const saved = localStorage.getItem('currentSales')
-    return saved ? parseFloat(saved) : 0
+    return saved ? parseFloat(saved) : 0 // Garantir que seja um número, ou 0 se não existir
   })
   
   const [segment, setSegment] = useState(() => {
     const saved = localStorage.getItem('segment')
-    return saved || "varejo"
+    return saved || "varejo" // Usar "varejo" como valor padrão se não encontrar no localStorage
   })
 
   const [currentDay, setCurrentDay] = useState(() => {
     const saved = localStorage.getItem('currentDay')
-    return saved ? parseInt(saved) : new Date().getDate()
+    return saved ? parseInt(saved) : new Date().getDate() // Garantir que seja um número ou o dia atual
   })
 
   const [newCostName, setNewCostName] = useState("")
@@ -47,6 +47,7 @@ function App() {
   const [newVariableCostValue, setNewVariableCostValue] = useState("")
 
   useEffect(() => {
+    // Salvando no localStorage de forma segura com JSON.stringify
     localStorage.setItem('fixedCosts', JSON.stringify(fixedCosts))
     localStorage.setItem('variableCosts', JSON.stringify(variableCosts))
     localStorage.setItem('currentSales', currentSales.toString())
@@ -271,21 +272,21 @@ function App() {
       prazoRecebimento: [
         "1. Analise opções de factoring",
         "2. Implemente desconto para antecipação",
-        "3. Desenvolva política de crédito",
-        "4. Utilize seguro de crédito",
-        "5. Monitore inadimplência por cliente"
+        "3. Desenvolva política de crédito rígida",
+        "4. Utilize sistemas de cobrança automatizada",
+        "5. Negocie com grandes compradores"
       ].join("\n"),
       prazoPagamento: [
-        "1. Desenvolva múltiplos fornecedores",
-        "2. Negocie contratos de longo prazo",
-        "3. Implemente compras programadas",
-        "4. Utilize hedge para commodities",
-        "5. Mantenha capital de giro adequado"
+        "1. Utilize técnicas de financiamento de curto prazo",
+        "2. Renegocie prazos com fornecedores estratégicos",
+        "3. Utilize descontos por pagamento antecipado",
+        "4. Desenvolva reservas financeiras",
+        "5. Use factoring para antecipação de recebíveis"
       ].join("\n")
     }
   }
 
-  const tips = financialTips[segment]
+  const selectedFinancialTips = financialTips[segment]
 
   return (
     <div className="min-h-screen bg-[#ececec] p-2 sm:p-4 md:p-8 text-[#000]">
