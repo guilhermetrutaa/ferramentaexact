@@ -1,73 +1,75 @@
 'use client';
 
-
-import React, { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { toast } from "@/components/ui/use-toast"
-import { Toaster } from "@/components/ui/toaster"
-import { SalesInput } from "@/components/SalesInput"
-import { ProfitDisplay } from "@/components/ProfitDisplay"
-import { DateSelector } from "@/components/DateSelector"
-import { CostSummary } from "@/components/CostSummary"
-import { ProfitChart } from "@/components/ProfitChart"
-import Image from 'next/image'
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { toast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import { SalesInput } from "@/components/SalesInput";
+import { ProfitDisplay } from "@/components/ProfitDisplay";
+import { DateSelector } from "@/components/DateSelector";
+import { CostSummary } from "@/components/CostSummary";
+import { ProfitChart } from "@/components/ProfitChart";
+import Image from 'next/image';
 
 function App() {
-  const [fixedCosts, setFixedCosts] = useState(() => {
-    const saved = localStorage.getItem('fixedCosts')
-    return saved ? JSON.parse(saved) : [] // Garantir que seja um array vazio se não existir no localStorage
-  })
-  
-  const [variableCosts, setVariableCosts] = useState(() => {
-    const saved = localStorage.getItem('variableCosts')
-    return saved ? JSON.parse(saved) : [] // Garantir que seja um array vazio se não existir no localStorage
-  })
-  
-  const [currentSales, setCurrentSales] = useState(() => {
-    const saved = localStorage.getItem('currentSales')
-    return saved ? parseFloat(saved) : 0 // Garantir que seja um número, ou 0 se não existir
-  })
-  
-  const [segment, setSegment] = useState(() => {
-    const saved = localStorage.getItem('segment')
-    return saved || "varejo" // Usar "varejo" como valor padrão se não encontrar no localStorage
-  })
-
-  const [currentDay, setCurrentDay] = useState(() => {
-    const saved = localStorage.getItem('currentDay')
-    return saved ? parseInt(saved) : new Date().getDate() // Garantir que seja um número ou o dia atual
-  })
-
-  const [newCostName, setNewCostName] = useState("")
-  const [newCostValue, setNewCostValue] = useState("")
-  const [newVariableCostName, setNewVariableCostName] = useState("")
-  const [newVariableCostValue, setNewVariableCostValue] = useState("")
+  // Estado inicial seguro para SSR
+  const [isClient, setIsClient] = useState(false);
+  const [fixedCosts, setFixedCosts] = useState([]);
+  const [variableCosts, setVariableCosts] = useState([]);
+  const [currentSales, setCurrentSales] = useState(0);
+  const [segment, setSegment] = useState("varejo");
+  const [currentDay, setCurrentDay] = useState(new Date().getDate());
+  const [newCostName, setNewCostName] = useState("");
+  const [newCostValue, setNewCostValue] = useState("");
+  const [newVariableCostName, setNewVariableCostName] = useState("");
+  const [newVariableCostValue, setNewVariableCostValue] = useState("");
 
   useEffect(() => {
-    // Salvando no localStorage de forma segura com JSON.stringify
-    localStorage.setItem('fixedCosts', JSON.stringify(fixedCosts))
-    localStorage.setItem('variableCosts', JSON.stringify(variableCosts))
-    localStorage.setItem('currentSales', currentSales.toString())
-    localStorage.setItem('segment', segment)
-    localStorage.setItem('currentDay', currentDay.toString())
-  }, [fixedCosts, variableCosts, currentSales, segment, currentDay])
+    setIsClient(true);
+    
+    // Carrega dados do localStorage apenas no cliente
+    if (typeof window !== 'undefined') {
+      const savedFixedCosts = localStorage.getItem('fixedCosts');
+      const savedVariableCosts = localStorage.getItem('variableCosts');
+      const savedCurrentSales = localStorage.getItem('currentSales');
+      const savedSegment = localStorage.getItem('segment');
+      const savedCurrentDay = localStorage.getItem('currentDay');
 
-  const totalFixedCosts = fixedCosts.reduce((sum, cost) => sum + parseFloat(cost.value), 0)
-  const totalVariableCostPercentage = variableCosts.reduce((sum, cost) => sum + parseFloat(cost.value), 0)
-  const contributionMargin = (100 - totalVariableCostPercentage) / 100
-  const breakEvenPoint = totalFixedCosts / contributionMargin
+      if (savedFixedCosts) setFixedCosts(JSON.parse(savedFixedCosts));
+      if (savedVariableCosts) setVariableCosts(JSON.parse(savedVariableCosts));
+      if (savedCurrentSales) setCurrentSales(parseFloat(savedCurrentSales));
+      if (savedSegment) setSegment(savedSegment);
+      if (savedCurrentDay) setCurrentDay(parseInt(savedCurrentDay));
+    }
+  }, []);
+
+  // Atualiza localStorage quando estados mudam
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('fixedCosts', JSON.stringify(fixedCosts));
+      localStorage.setItem('variableCosts', JSON.stringify(variableCosts));
+      localStorage.setItem('currentSales', currentSales.toString());
+      localStorage.setItem('segment', segment);
+      localStorage.setItem('currentDay', currentDay.toString());
+    }
+  }, [fixedCosts, variableCosts, currentSales, segment, currentDay, isClient]);
+
+  const totalFixedCosts = fixedCosts.reduce((sum, cost) => sum + parseFloat(cost.value), 0);
+  const totalVariableCostPercentage = variableCosts.reduce((sum, cost) => sum + parseFloat(cost.value), 0);
+  const contributionMargin = (100 - totalVariableCostPercentage) / 100;
+  const breakEvenPoint = totalFixedCosts / contributionMargin;
   
-  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
-  const daysRemaining = daysInMonth - currentDay
+  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+  const daysRemaining = daysInMonth - currentDay;
   
-  const currentProfit = currentSales * contributionMargin - totalFixedCosts
-  const dailyAverage = currentDay > 0 ? currentSales / currentDay : 0
-  const projectedRemainingDaysSales = dailyAverage * daysRemaining
-  const projectedTotalSales = currentSales + projectedRemainingDaysSales
-  const projectedMonthlyProfit = projectedTotalSales * contributionMargin - totalFixedCosts
+  const currentProfit = currentSales * contributionMargin - totalFixedCosts;
+  const dailyAverage = currentDay > 0 ? currentSales / currentDay : 0;
+  const projectedRemainingDaysSales = dailyAverage * daysRemaining;
+  const projectedTotalSales = currentSales + projectedRemainingDaysSales;
+  const projectedMonthlyProfit = projectedTotalSales * contributionMargin - totalFixedCosts;
 
   const addFixedCost = () => {
     if (!newCostName || !newCostValue) {
@@ -75,19 +77,19 @@ function App() {
         title: "Erro",
         description: "Por favor preencha o nome e valor do custo fixo",
         variant: "destructive"
-      })
-      return
+      });
+      return;
     }
 
-    setFixedCosts([...fixedCosts, { name: newCostName, value: parseFloat(newCostValue) }])
-    setNewCostName("")
-    setNewCostValue("")
+    setFixedCosts([...fixedCosts, { name: newCostName, value: parseFloat(newCostValue) }]);
+    setNewCostName("");
+    setNewCostValue("");
     
     toast({
       title: "Sucesso",
       description: "Custo fixo adicionado com sucesso"
-    })
-  }
+    });
+  };
 
   const addVariableCost = () => {
     if (!newVariableCostName || !newVariableCostValue) {
@@ -95,8 +97,8 @@ function App() {
         title: "Erro",
         description: "Por favor preencha o nome e percentual do custo variável",
         variant: "destructive"
-      })
-      return
+      });
+      return;
     }
 
     if (parseFloat(newVariableCostValue) < 0 || parseFloat(newVariableCostValue) > 100) {
@@ -104,31 +106,31 @@ function App() {
         title: "Erro",
         description: "O percentual deve estar entre 0 e 100",
         variant: "destructive"
-      })
-      return
+      });
+      return;
     }
 
-    setVariableCosts([...variableCosts, { name: newVariableCostName, value: parseFloat(newVariableCostValue) }])
-    setNewVariableCostName("")
-    setNewVariableCostValue("")
+    setVariableCosts([...variableCosts, { name: newVariableCostName, value: parseFloat(newVariableCostValue) }]);
+    setNewVariableCostName("");
+    setNewVariableCostValue("");
     
     toast({
       title: "Sucesso",
       description: "Custo variável adicionado com sucesso"
-    })
-  }
+    });
+  };
 
   const removeCost = (index, type) => {
     if (type === 'fixed') {
-      setFixedCosts(fixedCosts.filter((_, i) => i !== index))
+      setFixedCosts(fixedCosts.filter((_, i) => i !== index));
     } else {
-      setVariableCosts(variableCosts.filter((_, i) => i !== index))
+      setVariableCosts(variableCosts.filter((_, i) => i !== index));
     }
     toast({
       title: "Sucesso",
       description: `${type === 'fixed' ? 'Custo fixo' : 'Custo variável'} removido com sucesso`
-    })
-  }
+    });
+  };
 
   const financialTips = {
     varejo: {
@@ -284,9 +286,9 @@ function App() {
         "5. Use factoring para antecipação de recebíveis"
       ].join("\n")
     }
-  }
+  };
 
-  const selectedFinancialTips = financialTips[segment]
+  const selectedFinancialTips = financialTips[segment];
 
   return (
     <div className="min-h-screen bg-[#ececec] p-2 sm:p-4 md:p-8 text-[#000]">
