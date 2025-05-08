@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
 import React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -34,27 +34,31 @@ export function ProfitChart({
     const dailyAverage = currentDay > 0 ? currentSales / currentDay : 0
     const dailyProfit = currentDay > 0 ? currentProfit / currentDay : 0
 
-    // Dados reais até o dia atual
     for (let i = 1; i <= currentDay; i++) {
+      const lucroValor = dailyProfit * i
       data.push({
         dia: i,
         vendas: dailyAverage * i,
-        lucro: dailyProfit * i
+        lucro: lucroValor,
+        lucroPositivo: lucroValor >= 0 ? lucroValor : null,
+        lucroNegativo: lucroValor < 0 ? lucroValor : null
       })
     }
 
-    // Projeção para os dias restantes
     const remainingDays = daysInMonth - currentDay
-    const projectedDailyProfit = remainingDays > 0 ? 
+    const projectedDailyProfit = remainingDays > 0 ?
       (projectedMonthlyProfit - currentProfit) / remainingDays : 0
     const projectedDailySales = remainingDays > 0 ?
       (projectedTotalSales - currentSales) / remainingDays : 0
 
     for (let i = currentDay + 1; i <= daysInMonth; i++) {
+      const lucroValor = currentProfit + (projectedDailyProfit * (i - currentDay))
       data.push({
         dia: i,
         vendas: currentSales + (projectedDailySales * (i - currentDay)),
-        lucro: currentProfit + (projectedDailyProfit * (i - currentDay))
+        lucro: lucroValor,
+        lucroPositivo: lucroValor >= 0 ? lucroValor : null,
+        lucroNegativo: lucroValor < 0 ? lucroValor : null
       })
     }
 
@@ -63,11 +67,18 @@ export function ProfitChart({
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
+      const vendas = payload.find(p => p.dataKey === 'vendas')?.value ?? 0
+      const lucro = payload.find(p => ['lucroPositivo', 'lucroNegativo'].includes(p.dataKey))?.value ?? 0
+
       return (
-        <div className="bg-white p-3 border rounded shadow-lg">
-          <p className="font-semibold">Dia: {label}</p>
-          <p className="text-blue-600">Vendas: {formatCurrency(payload[0].value)}</p>
-          <p className="text-green-600">Lucro: {formatCurrency(payload[1].value)}</p>
+        <div className="bg-white p-3 border rounded shadow-lg text-sm">
+          <p className="font-semibold mb-1">Dia: {label}</p>
+          <p className="text-blue-600">Vendas: {formatCurrency(vendas)}</p>
+          <p className={lucro >= 0 ? 'text-green-600' : 'text-red-600'}>
+            Lucro: {lucro >= 0 
+              ? formatCurrency(lucro) 
+              : `-${formatCurrency(Math.abs(lucro))}`}
+          </p>
         </div>
       )
     }
@@ -75,62 +86,64 @@ export function ProfitChart({
   }
 
   return (
-    <Card className="bg-white shadow-[2rem] shadow-[#000000af]">
+    <Card className="bg-white shadow-lg border border-gray-200">
       <CardContent className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Evolução de Vendas e Lucro</h3>
+        <h3 className="text-xl font-semibold mb-6 text-gray-800">Evolução de Vendas e Lucro</h3>
         <div className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
+            <LineChart
               data={generateData()}
-              margin={{
-                top: 20,
-                right: 30,
-                left: 20,
-                bottom: 10,
-              }}
+              margin={{ top: 20, right: 40, left: 60, bottom: 40 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="dia"
-                label={{ value: 'Dias do Mês', position: 'bottom', offset: 0 }}
+                label={{ value: 'Dias do Mês', position: 'insideBottom', offset: -20 }}
+                tick={{ fontSize: 12 }}
               />
               <YAxis
                 tickFormatter={formatCurrency}
-                label={{ value: 'Valores (R$)', angle: -90, position: 'insideLeft' }}
+                label={{
+                  value: 'Valores (R$)',
+                  angle: -90,
+                  position: 'insideLeft',
+                  dx: -60,
+                  fontSize: 14
+                }}
+                tick={{ fontSize: 12 }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                verticalAlign="top" 
-                height={36}
+              <Legend
+                verticalAlign="top"
                 wrapperStyle={{
-                  paddingBottom: "20px",
-                  paddingTop: "10px"
+                  paddingBottom: "30px",
+                  fontSize: "14px"
                 }}
               />
-              
-              {/* Área de Vendas */}
-              <Area
+              <Line
                 type="monotone"
                 dataKey="vendas"
                 name="Vendas"
                 stroke="#2563eb"
-                fill="#3b82f6"
-                fillOpacity={0.2}
                 strokeWidth={2}
+                dot={false}
               />
-              
-              {/* Área de Lucro */}
-              <Area
+              <Line
                 type="monotone"
-                dataKey="lucro"
-                name="Lucro"
+                dataKey="lucroPositivo"
+                name="Lucro Positivo"
                 stroke="#16a34a"
-                fill="#22c55e"
-                fillOpacity={0.2}
                 strokeWidth={2}
+                dot={false}
               />
-
-              {/* Linha do Dia Atual */}
+              <Line
+                type="monotone"
+                dataKey="lucroNegativo"
+                name="Lucro Negativo"
+                stroke="#dc2626"
+                strokeWidth={2}
+                dot={false}
+              />
               <ReferenceLine
                 x={currentDay}
                 stroke="#6b7280"
@@ -138,10 +151,12 @@ export function ProfitChart({
                 label={{
                   value: 'Hoje',
                   position: 'top',
-                  fill: '#6b7280'
+                  fill: '#6b7280',
+                  fontSize: 12,
+                  dy: -10
                 }}
               />
-            </AreaChart>
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </CardContent>

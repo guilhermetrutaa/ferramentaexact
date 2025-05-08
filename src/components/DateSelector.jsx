@@ -7,11 +7,18 @@ import { Card, CardContent } from "@/components/ui/card"
 
 export function DateSelector({ currentDay, setCurrentDay }) {
   const handleDayChange = (e) => {
-    const value = parseInt(e.target.value)
-    if (!isNaN(value) && value >= 1 && value <= 31) {
-      setCurrentDay(value)
+    const value = e.target.value;
+
+    if (value === "") {
+      setCurrentDay("");
+      return;
     }
-  }
+
+    const parsed = parseInt(value);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 31) {
+      setCurrentDay(parsed);
+    }
+  };
 
   return (
     <Card className="bg-white">
@@ -33,5 +40,5 @@ export function DateSelector({ currentDay, setCurrentDay }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

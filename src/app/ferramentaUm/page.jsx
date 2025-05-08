@@ -14,6 +14,15 @@ import { CostSummary } from "@/components/CostSummary";
 import { ProfitChart } from "@/components/ProfitChart";
 import Image from 'next/image';
 
+function formatToBRL(value) {
+  const numericValue = value.replace(/\D/g, "");
+  const number = parseFloat(numericValue) / 100;
+  return number.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 function App() {
   // Estado inicial seguro para SSR
   const [isClient, setIsClient] = useState(false);
@@ -26,6 +35,10 @@ function App() {
   const [newCostValue, setNewCostValue] = useState("");
   const [newVariableCostName, setNewVariableCostName] = useState("");
   const [newVariableCostValue, setNewVariableCostValue] = useState("");
+  const [isEditingFixed, setIsEditingFixed] = useState(false);
+  const [editFixedIndex, setEditFixedIndex] = useState(null);
+  const [isEditingVariable, setIsEditingVariable] = useState(false);
+  const [editVariableIndex, setEditVariableIndex] = useState(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -290,6 +303,132 @@ function App() {
 
   const selectedFinancialTips = financialTips[segment];
 
+
+  const handleMoneyChange = (e) => {
+      let input = e.target.value;
+      
+      // Remove todos os caracteres não numéricos
+      let numericValue = input.replace(/\D/g, '');
+      
+      // Adiciona zeros à esquerda se necessário para ter pelo menos 3 dígitos
+      numericValue = numericValue.padStart(3, '0');
+      
+      // Separa reais e centavos
+      const reais = numericValue.slice(0, -2);
+      const centavos = numericValue.slice(-2);
+      
+      // Formata com separadores de milhar e decimal
+      let formattedValue = '';
+      if (reais.length > 0) {
+          formattedValue = Number(reais).toLocaleString('pt-BR') + ',' + centavos;
+      } else {
+          formattedValue = '0,' + centavos;
+      }
+      
+      setNewCostValue(formattedValue);
+  };
+
+
+  const parseBRLToNumber = (value) => {
+    if (!value) return 0;
+    // Remove todos os pontos e substitui vírgula por ponto
+    const cleanValue = value.toString().replace(/\./g, '').replace(',', '.');
+    return parseFloat(cleanValue) || 0;
+  };
+
+  const addOrEditFixedCost = () => {
+    if (newCostName === "" || newCostValue === "") return;
+
+    // Usar a função de parse correta
+    const parsedValue = parseBRLToNumber(newCostValue);
+
+    const newCost = {
+      name: newCostName,
+      value: isNaN(parsedValue) ? 0 : parsedValue,
+    };
+
+    if (isEditingFixed) {
+      const updated = [...fixedCosts];
+      updated[editFixedIndex] = newCost;
+      setFixedCosts(updated);
+      setIsEditingFixed(false);
+      setEditFixedIndex(null);
+    } else {
+      setFixedCosts([...fixedCosts, newCost]);
+    }
+
+    setNewCostName("");
+    setNewCostValue("");
+  };
+
+  const startEditFixed = (index) => {
+    const cost = fixedCosts[index];
+    setNewCostName(cost.name);
+    
+    // Formatando corretamente o valor para edição
+    setNewCostValue(
+      cost.value.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    );
+    
+    setIsEditingFixed(true);
+    setEditFixedIndex(index);
+  };
+
+  const addOrEditVariableCost = () => {
+    if (newVariableCostName === "" || newVariableCostValue === "") return;
+
+    // Usar o mesmo parser para consistência
+    const parsedValue = parseBRLToNumber(newVariableCostValue);
+
+    const newCost = {
+      name: newVariableCostName,
+      value: isNaN(parsedValue) ? 0 : parsedValue,
+    };
+
+    if (isEditingVariable) {
+      const updated = [...variableCosts];
+      updated[editVariableIndex] = newCost;
+      setVariableCosts(updated);
+      setIsEditingVariable(false);
+      setEditVariableIndex(null);
+    } else {
+      setVariableCosts([...variableCosts, newCost]);
+    }
+
+    setNewVariableCostName("");
+    setNewVariableCostValue("");
+  };
+
+  const startEditVariable = (index) => {
+    const cost = variableCosts[index];
+    setNewVariableCostName(cost.name);
+    
+    // Formatando igual aos fixos
+    setNewVariableCostValue(
+      cost.value.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    );
+    
+    setIsEditingVariable(true);
+    setEditVariableIndex(index);
+  };
+
+  const parseCurrencyToNumber = (currencyString) => {
+    // Remove pontos de milhar e converte vírgula decimal para ponto
+    return parseFloat(
+      currencyString
+        .replace(/\./g, '')  // Remove separadores de milhar
+        .replace(',', '.')   // Converte decimal para padrão internacional
+    );
+  };
+
+
+
   return (
     <div className="min-h-screen bg-[#ececec] p-2 sm:p-4 md:p-8 text-[#000]">
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-8">
@@ -321,13 +460,17 @@ function App() {
               </select>
             </div>
 
+            {/* Vendas Atuais */}
+            <SalesInput currentSales={currentSales} setCurrentSales={setCurrentSales} />
+
             {/* Data Atual */}
             <DateSelector currentDay={currentDay} setCurrentDay={setCurrentDay} />
 
             {/* Custos Fixos */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Custos Fixos</h3>
-              <div className="flex flex-col sm:flex-row gap-4">
+
+              <div className="flex flex-col sm:flex-row gap-5">
                 <div className="flex-1">
                   <Label htmlFor="costName">Nome do Custo</Label>
                   <Input
@@ -341,31 +484,43 @@ function App() {
                   <Label htmlFor="costValue">Valor (R$)</Label>
                   <Input
                     id="costValue"
-                    type="number"
+                    type="text"
                     value={newCostValue}
-                    onChange={(e) => setNewCostValue(e.target.value)}
-                    placeholder="0.00"
+                    onChange={handleMoneyChange}
+                    placeholder="0,00"
                   />
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={addFixedCost} className="w-full sm:w-auto bg-[#000] text-[#fff]">Adicionar</Button>
+
                 </div>
               </div>
-              
+                <div className="flex items-end">
+                  <Button onClick={addOrEditFixedCost} className="w-full sm:w-auto bg-[#000] text-[#fff]">
+                    {isEditingFixed ? "Salvar Edição" : "Adicionar"}
+                  </Button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 {fixedCosts.map((cost, index) => (
                   <div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white rounded-md shadow-sm gap-2">
                     <span>{cost.name}</span>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-                      <span>R$ {cost.value.toFixed(2)}</span>
-                      <Button variant="destructive" size="sm" onClick={() => removeCost(index, 'fixed')} className="w-full sm:w-auto bg-[#000] text-[#fff]">
-                        Remover
-                      </Button>
+                      <span>
+                        {/* Formatação de valor para moeda com vírgula para centavos e ponto para milhares */}
+                        R$ {cost.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <div className="flex gap-2">
+                        <Button onClick={() => startEditFixed(index)} size="sm" className="bg-yellow-500 text-white">
+                          Editar
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => removeCost(index, 'fixed')} className="bg-[#000] text-white">
+                          Remover
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+
 
             {/* Custos Variáveis */}
             <div className="space-y-4">
@@ -393,19 +548,26 @@ function App() {
                   />
                 </div>
                 <div className="flex items-end">
-                  <Button onClick={addVariableCost} className="w-full sm:w-auto bg-[#000] text-[#fff]">Adicionar</Button>
+                  <Button onClick={addOrEditVariableCost} className="w-full sm:w-auto bg-[#000] text-[#fff]">
+                    {isEditingVariable ? "Salvar Edição" : "Adicionar"}
+                  </Button>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 {variableCosts.map((cost, index) => (
                   <div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-white rounded-md shadow-sm gap-2">
                     <span>{cost.name}</span>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                       <span>{cost.value.toFixed(2)}%</span>
-                      <Button variant="destructive" size="sm" onClick={() => removeCost(index, 'variable')} className="w-full sm:w-auto">
-                        Remover
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={() => startEditVariable(index)} size="sm" className="bg-yellow-500 text-white">
+                          Editar
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => removeCost(index, 'variable')} className="bg-[#000] text-white">
+                          Remover
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -414,9 +576,6 @@ function App() {
 
             {/* Resumo dos Custos */}
             <CostSummary fixedCosts={fixedCosts} variableCosts={variableCosts} />
-
-            {/* Vendas Atuais */}
-            <SalesInput currentSales={currentSales} setCurrentSales={setCurrentSales} />
           </CardContent>
         </Card>
 

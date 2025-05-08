@@ -28,16 +28,8 @@ export function ProfitDisplay({
         <CardContent className="p-6">
           <h3 className="text-xl font-semibold mb-3">Ponto de Equilíbrio</h3>
           <p className="text-lg mb-3">
-            Você precisa vender {formatCurrency(breakEvenPoint)} para cobrir todos os custos
+            Você precisa vender <strong>{formatCurrency(breakEvenPoint)}</strong> para cobrir todos os custos
           </p>
-          <div className="w-full bg-purple-700/30 rounded-full h-3">
-            <div
-              className="bg-purple-200 h-3 rounded-full transition-all duration-500"
-              style={{
-                width: `${Math.min((currentProfit / breakEvenPoint) * 100, 100)}%`
-              }}
-            ></div>
-          </div>
         </CardContent>
       </Card>
 
